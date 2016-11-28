@@ -1,0 +1,90 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     twoPhaseEulerFoam;
+
+startFrom       latestTime;
+
+startTime       0.1;
+
+stopAt          endTime;
+//stopAt          writeNow;
+
+endTime         2000;
+
+deltaT          1.0e-2;
+
+writeControl    adjustableRunTime;
+
+writeInterval   10;
+
+purgeWrite      0;
+
+writeFormat     binary;
+
+writePrecision  6;
+
+writeCompression uncompressed;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable yes;
+
+adjustTimeStep  no;
+
+maxCo           0.25;
+
+maxDeltaT       1;
+
+
+functions
+{
+	forces
+    {
+        type        forceCoeffs;
+        functionObjectLibs ( "libforces.so" );
+        
+        writeControl    timeStep;
+        writeInterval   1;
+        
+        patches
+        (
+            cylinder
+        );
+		directForceDensity no;
+
+        pName       p;
+        UName       U;
+        rhoName     rhoInf;
+        //log         true;
+        rhoInf      994.5;
+        rho         rhoInf;
+        CofR        ( 0 0 0 );
+        liftDir     ( 0 1 0 );
+        dragDir     ( 1 0 0 );
+        pitchAxis   ( 0 0 1 );
+        magUInf     10.0;
+        lRef        0.04;
+        Aref        0.0157;
+        Aref1        0.004;
+        rhoRef      994.5;
+    }
+}
+
+// ************************************************************************* //
