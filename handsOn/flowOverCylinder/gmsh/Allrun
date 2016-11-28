@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# run the case
+
+./meshIt
+
+./run
+
+./post
