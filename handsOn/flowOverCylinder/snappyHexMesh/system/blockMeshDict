@@ -1,0 +1,102 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version:  2.1.x                                 |
+|   \  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+	version		2.0;
+	format		ascii;
+	class		dictionary;
+	object		blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+
+
+convertToMeters 1.0;
+
+// Overall domain bounding box (0 -0.5 0) (2.5 0.5 0.01)
+
+vertices
+(
+	( 0.0 -0.5 0.01 )	 //  0
+	( 2.5 -0.5 0.01 )	 //  1
+	
+	( 2.5 -0.5 0.0 )	 //  2
+	( 0.0 -0.5 0.0 )	 //  3
+	
+	( 0.0 0.5 0.01 )	     //  4
+	
+	( 2.5 0.5 0.01 )	     //  5
+	( 2.5 0.5 0.0 )	 //  6
+	
+	( 0.0 0.5 0.0 )	 //  7
+);
+
+blocks
+(
+    hex ( 0 1 2 3 4 5 6 7 )   ( 51 1 23) simpleGrading ( 1 1 1 )  // 0
+);
+
+edges
+(
+);
+
+boundary
+(
+
+inlet
+{
+  type patch;
+  faces
+  (
+    ( 0 3 7 4 )
+  );
+}
+
+
+outlet
+{
+  type patch;
+  faces
+  (
+    ( 1 2 6 5 )
+  );
+}
+
+
+sides
+{
+  type patch;
+  faces
+  (
+    ( 0 3 2 1 )
+    ( 4 5 6 7 )
+  );
+}
+
+front
+{
+  type patch;
+  faces
+  (
+    ( 2 3 7 6 )
+  );
+}
+
+);
+
+
+
+
+mergePatchPairs
+(
+);
+
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
