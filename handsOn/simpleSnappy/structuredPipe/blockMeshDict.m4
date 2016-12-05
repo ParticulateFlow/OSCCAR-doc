@@ -1,0 +1,316 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    `format'      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// General macros to create 2D/extruded-2D meshes
+// Usage:
+//	m4 -I /usr/share/doc/m4/examples < blockMeshDictPrototype.m4 > blockMeshDict.m4
+//	m4 < blockMeshDict.m4 > blockMeshDict
+//
+//	added arc edges between aerator and column; points ih*
+
+include(`forloop.m4')
+
+
+changecom(//)changequote([,])
+define(calc, [esyscmd(perl -e 'use Math::Trig; print ($1)')])
+define(round, [esyscmd(perl -e 'use Math::Round; print nearest(1.0, $1)')])
+define(min2, [esyscmd(python -c "print min($1,$2)")])
+define(max2, [esyscmd(python -c "print max($1,$2)")])
+define(VCOUNT, 0)
+define(vlabel, [[// ]Vertex $1 = VCOUNT define($1, VCOUNT)define([VCOUNT], incr(VCOUNT))])
+define(cvlabel, [[// ]Vertex $1 = VCOUNT define($1, VCOUNT)])
+
+[changecom(//)changequote([,])]
+[define(calc, [esyscmd(perl -e 'use Math::Trig; print ($1)')])]
+[define(round, [esyscmd(perl -e 'use Math::Round; print nearest(1.0, $1)')])]
+
+[define(VCOUNT, 0)]
+[define(vlabel, [[// ]Vertex $1 = VCOUNT define($1, VCOUNT)define([VCOUNT], incr(VCOUNT))])]
+[define(cvlabel, [[// ]Vertex $1 = VCOUNT define($1, VCOUNT)])]
+
+define(pi, 3.14159265)
+
+
+// # code duplication necessary - damn the meta programming
+define(hex2D, hex ($1b $2b $3b $4b $1t $2t $3t $4t))
+define(quad2D, ($1b $2b $2t $1t))
+
+define(frontQuad, ($1 $2 $3 $4))
+define(backQuad, ($1 $4 $3 $2))
+
+//define(testQuad, ($1$2 $1$3 $1[]incr($3) $1[]eval($2+4)))
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// * * *			I N P U T   S E C T I O N						   * * * //
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+convertToMeters 1;
+
+define(t, 0.005)
+
+define(DE, 0.06)
+define(DI, 0.04)
+define(DPI, calc(DI+2*t))
+define(DPA, 0.4)
+
+define(HE, 0.1)
+define(HCB, 0.05)
+define(HC, 0.1)
+define(HCT, 0.05)
+define(HP, 0.1)
+define(DU, 0.02)
+
+define(r00, calc(DE/2.0))
+define(r10, calc(DE/2.0))
+
+define(r20, calc(DI/2.0))
+define(r30, calc(DI/2.0))
+define(r40, calc(DI/2.0))
+define(r50, calc(DI/2.0))
+
+
+define(f, 0.6)
+define(rC00, calc(f*r00))
+define(rC10, calc(f*r10))
+define(rC20, calc(f*r20))
+define(rC30, calc(f*r30))
+define(rC40, calc(f*r40))
+define(rC50, calc(f*r50))
+
+define(fC, 0.3) // magic factor, column center edge radius
+
+define(Rp, calc(DPI/2.0))
+define(Rd, calc(DPA/2.0))
+
+[define(Lz00, ]calc(-HE))
+[define(Lz10, ]0.0)
+
+[define(Lz20, ]calc(HCB))
+[define(Lz30, ]calc(HCB+HC))
+[define(Lz32, ]calc(HCB+HC+0.01)) // TODO: correct values
+[define(Lz34, ]calc(HCB+HC+HCT/2))
+
+[define(Lz40, ]calc(HCB+HC+HCT))
+[define(Lz42, ]calc(HCB+HC+HCT+HP/4))
+[define(Lz44, ]calc(HCB+HC+HCT+HP))
+
+[define(Lz50, ]calc(HCB+HC+HCT+HP))
+
+define(downLevel, 13)
+changequote(`,')
+
+
+define(dz, 0.0035)
+
+// vertical
+forloop(`j',`0',`4',``define(nZ'eval(j)`0, round(calc((Lz'eval(j+1)`0 - Lz'eval(j)0)/dz)))
+')
+
+// tangential
+`define(nT', round(calc((sqrt(2.0)*rC50)/dz)))
+
+// radial
+`define(nRo', round(calc((r50 - rC50)/dz)))
+`define('nRp, 1)
+`define(nRd', round(calc((Rd - Rp)/dz)))
+
+
+// DEFINE CO-ORDINATES +++ automagic
+
+// # center
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+`define(xc'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'ifelse(eval((i+1)%2),`1',`calc((1-i)*indir(`rC'eval(j)`0'))',`0.0')`)
+define(yc'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'ifelse(eval((i)%2),`1',`calc((2-i)*indir(`rC'eval(j)`0'))',`0.0')`)'
+')
+')
+
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',``define(zc'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, Lz'j`0)'
+')
+')
+
+// # center edges
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+`define(exc'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'calc((1-i*(3-i))*((1.0+fC*(sqrt(2.0)-1.0))/sqrt(2.0))*indir(`rC'eval(j)`0')/sqrt(2.0))`)
+define(eyc'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'calc((2-i-(i+1)%2)*((1.0+fC*(sqrt(2.0)-1.0))/sqrt(2.0))*indir(`rC'eval(j)`0')/sqrt(2.0))`)'
+')
+')
+
+// # outside
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+`define(xo'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'ifelse(eval((i+1)%2),`1',`calc((1-i)*indir(`r'eval(j)`0'))',`0.0')`)
+define(yo'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'ifelse(eval((i)%2),`1',`calc((2-i)*indir(`r'eval(j)`0'))',`0.0')`)'
+')
+')
+
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',``define(zo'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, Lz'j`0)'
+')
+')
+
+// # outside edges
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+`define(exo'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'calc((1-i*(3-i))*indir(`r'eval(j)`0')/sqrt(2.0))`)
+define(eyo'ifelse(eval((i+j*4)/10),0,`0',`')eval(i+j*4)`, 'calc((2-i-(i+1)%2)*indir(`r'eval(j)`0')/sqrt(2.0))`)'
+')
+')
+
+
+
+
+
+// DEFINE VERTICES +++ automagic
+// # changequote([,])
+
+define(cvert, (xc$1$2 yc$1$2 $3))
+define(overt, (xo$1$2 yo$1$2 $3))
+
+define(ccvert, (xc$1$2 yc$1$2 zc$1$2))
+define(oovert, (xo$1$2 yo$1$2 zo$1$2))
+
+define(ecvert, (exc$1$2 eyc$1$2 zc$1$2))
+define(eovert, (exo$1$2 eyo$1$2 zo$1$2))
+
+
+vertices
+(
+    // outside
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+    oovert(eval((i+j*4)/10), eval((i+j*4)%10)) `vlabel(o'eval(i+j*4)`)' ')
+')
+
+// outside edges
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+    eovert(eval((i+j*4)/10), eval((i+j*4)%10)) `vlabel(eo'eval(i+j*4)`)' ')
+')
+
+	// center
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+    ccvert(eval((i+j*4)/10), eval((i+j*4)%10)) `vlabel(c'eval(i+j*4)`)' ')
+')
+	
+	// center endges
+forloop(`j',`0',`5',`
+forloop(`i',`0',`3',`
+    ccvert(eval((i+j*4)/10), eval((i+j*4)%10)) `vlabel(ec'eval(i+j*4)`)' ')
+')
+
+);
+
+blocks
+(
+    // center
+    forloop(`j',`0',`4',`
+    hex ( forloop(`i',`0',`7',`c`'eval(j*4+i) ') ) (nT nT nZ`'eval(j)0) simpleGrading (1 1 1)')
+    
+    // outside
+    forloop(`j',`0',`4',`
+    forloop(`i',`0',`3',`
+    hex (c`'eval(4*j+i) o`'eval(4*j+i) o`'eval(4*j+i+1-(i/3)*4) c`'eval(4*j+i+1-(i/3)*4) c`'eval(4*(j+1)+i) o`'eval(4*(j+1)+i) o`'eval(4*(j+1)+i+1-(i/3)*4) c`'eval(4*(j+1)+i+1-(i/3)*4)) (nRo nT nZ`'eval(j)0) simpleGrading (1 1 1)')')
+
+);
+
+edges
+(
+	// center
+	forloop(`j',`0',`5',`
+	forloop(`i',`0',`3',`
+	arc c`'eval(j*4+i) c`'eval(j*4+i+1 - (i/3)*4) ecvert(eval((j*4+i)/10), eval((j*4+i)%10))')')
+	
+	// outside
+	forloop(`j',`0',`5',`
+	forloop(`i',`0',`3',`
+	arc o`'eval(j*4+i) o`'eval(j*4+i+1 - (i/3)*4) eovert(eval((j*4+i)/10), eval((j*4+i)%10))')')
+
+);
+
+define(testQuad2, ``($1$2 $1$3 $1'eval($3+4)` $1'eval($2+4)`)'')
+
+define(testBackQuad2, ``($1$2 $1'eval($2+4)` $1'eval($3+4)` $1$3)'')
+
+boundary
+(
+    bottom
+    {
+        type patch;
+        faces
+        (
+            frontQuad(c0, c3, c2, c1)
+            
+            frontQuad(c1, o1, o0, c0)
+            frontQuad(c2, o2, o1, c1)
+            frontQuad(c3, o3, o2, c2)
+            frontQuad(c0, o0, o3, c3)
+        );
+    }
+    
+    top
+    {
+        type patch;
+        faces
+        (
+            frontQuad(c20, c21, c22, c23)
+            
+            frontQuad(c20, o20, o21, c21)
+            frontQuad(c21, o21, o22, c22)
+            frontQuad(c22, o22, o23, c23)
+            frontQuad(c23, o23, o20, c20)
+        );
+    }
+    
+    
+    walls
+    {
+        type wall;
+        faces
+        (
+            forloop(`j',`0',`4',`
+            ifelse(eval(j),eval(downLevel),`',
+            forloop(`i',`0',`2',`testQuad2(o, eval(i+4*j), eval((i+1)+4*j))
+            ')
+            frontQuad(o`'eval((j+1)*4-1), o`'eval(j*4), o`'eval((j+1)*4), o`'eval((j+1)*4+3))
+            )
+            ')
+        );
+    }
+);
+
+mergePatchPairs
+(
+);
+
+// ************************************************************************* //
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
