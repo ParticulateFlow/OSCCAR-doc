@@ -1,7 +1,0 @@
-#!/bin/bash
-#
-# run the case
-
-blockMesh
-
-twoPhaseEulerFoam

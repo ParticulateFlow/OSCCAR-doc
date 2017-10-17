@@ -1,9 +1,0 @@
-#!/bin/bash
-#
-# create the mesh
-
-gmsh -3 geometry.geo
-
-gmshToFoam geometry.msh
-
-createPatch -overwrite

@@ -1,5 +1,0 @@
-#!/bin/bash
-
-python createCylinderMesh_v01.py
-
-blockMesh

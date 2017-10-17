@@ -1,5 +1,0 @@
-#!/bin/bash
-#
-# run the case
-
-icoFoam

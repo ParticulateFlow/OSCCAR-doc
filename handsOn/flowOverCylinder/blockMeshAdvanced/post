@@ -1,7 +1,0 @@
-#!/bin/bash
-#
-# run the post-processing
-
-cd octave
-
-octave --persist postProcess.m

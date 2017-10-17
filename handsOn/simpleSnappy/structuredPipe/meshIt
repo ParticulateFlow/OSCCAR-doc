@@ -1,6 +1,0 @@
-#!/bin/bash
-
-m4 -I /usr/share/doc/m4/examples < blockMeshDict.m4 > test.m4 
-m4 < test.m4 > blockMeshDict
-blockMesh -dict blockMeshDict
-

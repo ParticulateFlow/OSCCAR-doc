@@ -1,8 +1,0 @@
-#!/bin/bash
-#
-# clean the case
-
-cd ${0%/*} || exit 1    # Run from this directory
-
-rm -rf 0.*
-rm -rf [1-9].*
